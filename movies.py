@@ -119,23 +119,25 @@ if __name__ == "__main__":
     #         st.session_state['vs'] = vector_store
 
     q = st.text_input("Enter the question")
+    st.text_area('Suggestions:', value="Try: Give me 5 latest horror scripts or Scripts similar to Fast and furious or Annabelle", height=100)
     if q:
-        if st.session_state['vs'] is not None:
-            vector_store = st.session_state['vs']
-        else:
-            vector_store = load_embeddings_pinecone()
-            st.session_state['vs'] = vector_store
+        with st.spinner("Running..."):
+            if st.session_state['vs'] is not None:
+                vector_store = st.session_state['vs']
+            else:
+                vector_store = load_embeddings_pinecone()
+                st.session_state['vs'] = vector_store
 
-        retriever = vector_store.as_retriever(search_type='similarity', search_kwargs={'k': 20})
-        crc = ConversationalRetrievalChain.from_llm(
-            llm=llm,
-            retriever=retriever,
-            memory=memory,
-            chain_type="stuff",
-            combine_docs_chain_kwargs={'prompt': qa_prompt},
-            verbose=False
-        )
-        answer = ask_question(q, crc)
+            retriever = vector_store.as_retriever(search_type='similarity', search_kwargs={'k': 20})
+            crc = ConversationalRetrievalChain.from_llm(
+                llm=llm,
+                retriever=retriever,
+                memory=memory,
+                chain_type="stuff",
+                combine_docs_chain_kwargs={'prompt': qa_prompt},
+                verbose=False
+            )
+            answer = ask_question(q, crc)
         st.text_area('Answer:', value=answer, height=300)
 
         st.divider()
