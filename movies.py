@@ -5,8 +5,8 @@ from langchain.memory import ConversationBufferMemory
 from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, SystemMessagePromptTemplate
 from PIL import Image
 import os
+import pinecone
 
-llm = ChatOpenAI(model="gpt-4-turbo", temperature=0.5)
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
 logo_path = "./jio.jpeg"
@@ -58,29 +58,50 @@ def chunk_data(data, chunk_size=900, chunk_overlap=90):
     chunks = text_splitter.split_documents(data)
     return chunks
 
-def create_embedding_chroma(chunks, persist_directory="./chroma_db"):
-    from langchain.vectorstores import Chroma
+def create_embedding_pinecone(chunks, index_name="jio-index"):
+    import pinecone
+    from langchain_community.vectorstores import Pinecone
     from langchain_openai import OpenAIEmbeddings
+    from pinecone import PodSpec
     
     embeddings = OpenAIEmbeddings(model="text-embedding-3-small", dimensions=1536)
-    vector_store = Chroma.from_documents(chunks, embeddings, persist_directory=persist_directory)
+    
+    # Initialize Pinecone
+    pc = pinecone.Pinecone()
+    
+    # Create Pinecone index
+    if index_name not in pc.list_indexes().names():
+        pc.create_index(
+            name=index_name,
+            dimension=1536,
+            metric="cosine",
+            spec=PodSpec(
+                environment='gcp-starter'
+            )
+        )
+
+    vector_store = Pinecone.from_documents(chunks, embeddings, index_name=index_name)
     return vector_store
 
-def load_embeddings_chroma(persist_directory="./chroma_db"):
-    from langchain.vectorstores import Chroma
+def load_embeddings_pinecone(index_name="jio-index"):
+    from langchain.vectorstores import Pinecone
     from langchain_openai import OpenAIEmbeddings
     
     embeddings = OpenAIEmbeddings(model="text-embedding-3-small", dimensions=1536)
-    vector_store = Chroma(persist_directory=persist_directory, embedding_function=embeddings)
+    
+    # Initialize Pinecone 
+    vector_store = Pinecone.from_existing_index(index_name=index_name, embedding=embeddings)
     return vector_store
 
 def ask_question(q, chain):
     result = chain.invoke({'question': q})
-    return result
+    return result['answer']
 
 if __name__ == "__main__":
     from dotenv import load_dotenv, find_dotenv
     load_dotenv(find_dotenv(), override=True)
+
+    llm = ChatOpenAI(model="gpt-4-turbo", temperature=0.5)
 
     if 'vs' not in st.session_state:
         st.session_state['vs'] = None
@@ -94,7 +115,7 @@ if __name__ == "__main__":
     #     if uploaded_folder:
     #         data = load_docx_files(uploaded_folder)
     #         chunks = chunk_data(data)
-    #         vector_store = create_embedding_chroma(chunks)
+    #         vector_store = create_embedding_pinecone(chunks)
     #         st.session_state['vs'] = vector_store
 
     q = st.text_input("Enter the question")
@@ -102,7 +123,7 @@ if __name__ == "__main__":
         if st.session_state['vs'] is not None:
             vector_store = st.session_state['vs']
         else:
-            vector_store = load_embeddings_chroma()
+            vector_store = load_embeddings_pinecone()
             st.session_state['vs'] = vector_store
 
         retriever = vector_store.as_retriever(search_type='similarity', search_kwargs={'k': 20})
@@ -115,4 +136,12 @@ if __name__ == "__main__":
             verbose=False
         )
         answer = ask_question(q, crc)
-        st.text_area('Answer:', value=answer['answer'], height=400)
+        st.text_area('Answer:', value=answer, height=300)
+
+        st.divider()
+        if 'history' not in st.session_state:
+            st.session_state.history = ''
+        value = f'Q: {q} \nA: {answer}'
+        st.session_state.history = f'{value} \n {"-"*100}\n {st.session_state.history}'
+        h = st.session_state.history
+        st.text_area(label="Chat history",value=h, key='history',height = 300)
