@@ -17,3 +17,4 @@ fastapi
 uvicorn
 sse_starlette
 pysqlite3-binary==0.5.3
+pinecone
