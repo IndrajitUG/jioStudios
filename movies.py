@@ -117,9 +117,9 @@ if __name__ == "__main__":
     #         chunks = chunk_data(data)
     #         vector_store = create_embedding_pinecone(chunks)
     #         st.session_state['vs'] = vector_store
-
+    st.text_area('Suggestions:', value="Try: Give me 5 latest horror scripts or Scripts similar to Fast and furious\n or\n Annabelle", height=100)
     q = st.text_input("Enter the question")
-    st.text_area('Suggestions:', value="Try: Give me 5 latest horror scripts or Scripts similar to Fast and furious or Annabelle", height=100)
+    
     if q:
         with st.spinner("Running..."):
             if st.session_state['vs'] is not None:
