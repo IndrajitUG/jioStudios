@@ -107,8 +107,8 @@ if __name__ == "__main__":
     if 'vs' not in st.session_state:
         st.session_state['vs'] = None
 
-    st.header("JioStudios ScriptsGPT")
-    st.image(logo, width=80)
+    st.header("Dharma ScriptsGPT")
+    st.image(logo, width=100)
 
     # with st.sidebar:
     #     uploaded_folder = st.text_input('Enter the path of the folder containing your files:')
