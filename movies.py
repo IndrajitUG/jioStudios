@@ -9,9 +9,9 @@ import pinecone
 
 memory = ConversationBufferMemory(memory_key="chat_history", return_messages=True)
 
-logo_path = "./Dharma.png"
-#logo_url = "https://pbs.twimg.com/media/D6cxKX_V4AAXWaH.jpg"
-logo_url = "https://upload.wikimedia.org/wikipedia/en/0/02/Dharma_Production_logo.png"
+logo_path = "./jio.jpeg"
+logo_url = "https://pbs.twimg.com/media/D6cxKX_V4AAXWaH.jpg"
+#logo_url = "https://upload.wikimedia.org/wikipedia/en/0/02/Dharma_Production_logo.png"
 
 if os.path.exists(logo_path):
     logo = Image.open(logo_path)
